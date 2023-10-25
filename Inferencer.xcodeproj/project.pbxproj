@@ -11,6 +11,7 @@
 		1CAEF9692AE55F0D00BBD428 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CAEF9682AE55F0D00BBD428 /* ContentView.swift */; };
 		1CAEF96B2AE55F0F00BBD428 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1CAEF96A2AE55F0F00BBD428 /* Assets.xcassets */; };
 		1CAEF96E2AE55F0F00BBD428 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1CAEF96D2AE55F0F00BBD428 /* Preview Assets.xcassets */; };
+		1CEDA6CC2AE6440A0084E9CF /* ImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CEDA6CB2AE6440A0084E9CF /* ImagePicker.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -19,6 +20,7 @@
 		1CAEF9682AE55F0D00BBD428 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		1CAEF96A2AE55F0F00BBD428 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1CAEF96D2AE55F0F00BBD428 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		1CEDA6CB2AE6440A0084E9CF /* ImagePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePicker.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -53,6 +55,7 @@
 			children = (
 				1CAEF9662AE55F0D00BBD428 /* InferencerApp.swift */,
 				1CAEF9682AE55F0D00BBD428 /* ContentView.swift */,
+				1CEDA6CB2AE6440A0084E9CF /* ImagePicker.swift */,
 				1CAEF96A2AE55F0F00BBD428 /* Assets.xcassets */,
 				1CAEF96C2AE55F0F00BBD428 /* Preview Content */,
 			);
@@ -137,6 +140,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1CEDA6CC2AE6440A0084E9CF /* ImagePicker.swift in Sources */,
 				1CAEF9692AE55F0D00BBD428 /* ContentView.swift in Sources */,
 				1CAEF9672AE55F0D00BBD428 /* InferencerApp.swift in Sources */,
 			);
@@ -270,11 +274,13 @@
 				DEVELOPMENT_TEAM = 53WK73J5M9;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "we want to save your photo";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 14.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -299,11 +305,13 @@
 				DEVELOPMENT_TEAM = 53WK73J5M9;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "we want to save your photo";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 14.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
