@@ -13,11 +13,13 @@ struct mediaPicker: UIViewControllerRepresentable{
     @Binding var selectedMedia: URL?
     @Binding var selectedImage:UIImage?
     @Binding var isShowingPicker:Bool
+    var mediaTypes: [String]
     
     func makeUIViewController(context: Context) -> some UIViewController {
         let mediaPicker = UIImagePickerController()
         mediaPicker.sourceType = .photoLibrary
-        mediaPicker.mediaTypes = ["public.image" , "public.movie"]
+//        mediaPicker.mediaTypes = ["public.image" , "public.movie"]
+        mediaPicker.mediaTypes = mediaTypes
         mediaPicker.delegate = context.coordinator //object that can receive uiimagepickercontroller events
         return mediaPicker
     }
