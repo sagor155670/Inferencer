@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AVKit
+import Photos
 
 
 
@@ -21,39 +22,26 @@ struct ContentView: View {
     @State var outputImageUrl:String? = nil
     @State var showProgress: Bool = false
     @State var outputMediaUrl: String? = nil
-    @State var playerItem: AVPlayerItem? = nil
+    @State var showAlert:Bool = false
+    @State var alertTitle: String = ""
+    @State var alertMessage: String = ""
+    @State var VideoUrl: URL? = nil
+    
+    
+    
     
     var body: some View {
         VStack{
             HStack{
                 Button {
-                    if let outputImageUrl = outputImageUrl {
-                        downloadAndSaveImage(url: outputImageUrl)
-                        outputImage = nil
-                        self.outputImageUrl = nil
-                    }
+                    downloadButtonAction()
                 } label: {
                     Text("Download ")
                         .font(.callout)
                         .fontWeight(.heavy)
                 }
                 Button {
-                    if selectedFirstImage != nil && selectedImage != nil {
-                        showProgress = true
-                        sendAPIPostRequest(firstImage: selectedFirstImage!, secondImage: selectedImage!){ url in
-                            outputImageUrl = url
-                            showProgress = false
-                        }
-                    }
-                    else if selectedFirstImage != nil && selectedMedia != nil {
-                        showProgress = true
-                        sendAPIPostRequest2(firstImage: selectedFirstImage!, videoURL: selectedMedia!){ url in
-                            outputMediaUrl = url
-                            showProgress = false
-                        }
-                       
-                    }
-                    
+                    processButtonAction()
                 } label: {
                     Text("Process")
                         .font(.callout)
@@ -61,132 +49,199 @@ struct ContentView: View {
                 }
             }
             VStack{
-                ZStack{
-                    Rectangle()
-                        .strokeBorder(style: .init(lineWidth: 2))
-                        .foregroundColor(Color.gray)
-                    
-                    if showProgress {
-                        ProgressView()
-                    }
-                    else{
-                        if outputImage != nil {
-                            Image(uiImage: outputImage!)
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                        }
-                        else if playerItem != nil {
-                            VideoPlayer(player: AVPlayer(playerItem: playerItem))
-                        }
-                        else{
-                            if ImageToShow != nil {
-                                Image(uiImage: ImageToShow!)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                            }
-                            else if selectedMedia != nil {
-                                VideoPlayer(player: AVPlayer(url: selectedMedia!))
-                            }
-                            else{
-                                Text("Tap image or Video to show")
-                                    .font(.callout)
-                                    .fontWeight(.heavy)
-                            }
-                        }
-                    }
-                    
-                    
-                    
-                }
-                
+                MediaPreviewer
+            }
+            .alert(isPresented: $showAlert) {
+                Alert(title: Text(alertTitle), message: Text(alertMessage), dismissButton: .default(Text("Ok")))
             }
             .frame(height: UIScreen.main.bounds.height/2)
+            
             .padding(.bottom,20)
             Spacer(minLength: 30)
-            HStack{
-                ZStack{
-                    Rectangle()
-                        .foregroundColor(.clear)
-                    
-                    if selectedFirstImage != nil {
-                        Image(uiImage: selectedFirstImage!)
-                            .resizable()
-                            .frame(width: 150,height: 175)
-                            //                                .aspectRatio(contentMode: .fit)
-                            .aspectRatio( contentMode: .fit)
-                            .foregroundColor(.gray)
-                        
-                    }else{
-                        Image(systemName: "photo.tv")
-                            .resizable()
-                            .frame(width: 70, height: 70)
-                            .aspectRatio(contentMode: .fit)
-                            .foregroundColor(.blue)
-                    }
-                    
-                    
-                }
-                .onTapGesture(count: 2) {
-                    isShowingPicker1.toggle()
-                }
-                .onTapGesture {
-                    ImageToShow = selectedFirstImage
-                }
-                Spacer(minLength: 20)
-                ZStack{
-                    Rectangle()
-                        .foregroundColor(.clear)
-                    
-                    if selectedMedia != nil {
-                            //                        VideoPlayer(player: AVPlayer(url: selectedMedia!))
-                        if let uiImage =  generateThumbnail(url: selectedMedia!){
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .frame(width: 150,height: 175)
-                                .aspectRatio(contentMode: .fit)
-                        }
-                        
-                    }
-                    else if selectedImage != nil{
-                        Image(uiImage: selectedImage!)
-                            .resizable()
-                            .frame(width: 150,height: 175)
-                            .aspectRatio( contentMode: .fit)
-                            .foregroundColor(.gray)
-                        
-                    }
-                    else{
-                        Image(systemName: "video.circle")
-                            .resizable()
-                            .frame(width: 70, height: 70)
-                            .aspectRatio(contentMode: .fit)
-                            .foregroundColor(.green)
-                    }
-                    
-                }
-                .onTapGesture(count: 2) {
-                    isShowingPicker2.toggle()
-                }
-                .onTapGesture {
-                    ImageToShow = selectedImage
-                }
-            }
+            
+            InputPreviewer
         }
         .frame(height: 200)
         .padding(50)
+        
+            // Showing Picker For First input image
         .sheet(isPresented: $isShowingPicker1){
             mediaPicker(selectedMedia: .constant(nil), selectedImage: $selectedFirstImage, isShowingPicker: $isShowingPicker1, mediaTypes: ["public.image"])
         }
+        
+            // Showing Picker For second input image/video
         .sheet(isPresented: $isShowingPicker2){
             mediaPicker(selectedMedia: $selectedMedia, selectedImage: $selectedImage, isShowingPicker: $isShowingPicker2, mediaTypes: ["public.image" , "public.movie"])
         }
+        
+            //Loading OutputImage from Response Url using loadImage function
         .onChange(of: outputImageUrl ?? "") { url in
             loadImage(for: url)
         }
         .onChange(of: outputMediaUrl ?? ""){url in
-            loadMedia(for: url) { playerItem in
-                self.playerItem = playerItem
+            print(url)
+            downloadVideo(from: URL(string: url)!) { localUrl in
+                VideoUrl = localUrl
             }
+            
+        }
+    }
+    
+        //ViewBuilder Computed property for Main Previewer
+    @ViewBuilder
+    var MediaPreviewer: some View {
+        ZStack{
+            Rectangle()
+                .strokeBorder(style: .init(lineWidth: 2))
+                .foregroundColor(Color.gray)
+            
+            if showProgress {
+                ProgressView()
+            }
+            else{
+                if outputImage != nil {
+                    Image(uiImage: outputImage!)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                }
+                else if VideoUrl != nil {
+                    
+                    VideoPlayer(player: AVPlayer(url: (VideoUrl ?? URL(string: " "))!))
+                    
+                }
+                    //                        else if playerItem != nil {
+                    //                            VideoPlayer(player: AVPlayer(playerItem: playerItem))
+                    //                        }
+                else{
+                    if ImageToShow != nil {
+                        Image(uiImage: ImageToShow!)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                    }
+                    else if selectedMedia != nil {
+                        VideoPlayer(player: AVPlayer(url: selectedMedia!))
+                    }
+                    else{
+                        Text("Tap image or Video to show")
+                            .font(.callout)
+                            .fontWeight(.heavy)
+                    }
+                }
+            }
+            
+            
+            
+        }
+    }
+    
+        //ViewBuilder Computed property for Input Previewer
+    @ViewBuilder
+    var InputPreviewer: some View {
+        HStack{
+            ZStack{
+                Rectangle()
+                    .foregroundColor(.clear)
+                
+                if selectedFirstImage != nil {
+                    Image(uiImage: selectedFirstImage!)
+                        .resizable()
+                        .frame(width: 150,height: 175)
+                        //                                .aspectRatio(contentMode: .fit)
+                        .aspectRatio( contentMode: .fit)
+                        .foregroundColor(.gray)
+                    
+                }else{
+                    Image(systemName: "photo.tv")
+                        .resizable()
+                        .frame(width: 70, height: 70)
+                        .aspectRatio(contentMode: .fit)
+                        .foregroundColor(.blue)
+                }
+                
+                
+            }
+            .onTapGesture(count: 2) {
+                isShowingPicker1.toggle()
+            }
+            .onTapGesture {
+                ImageToShow = selectedFirstImage
+            }
+            Spacer(minLength: 20)
+            ZStack{
+                Rectangle()
+                    .foregroundColor(.clear)
+                
+                if selectedMedia != nil {
+                        //                        VideoPlayer(player: AVPlayer(url: selectedMedia!))
+                    if let uiImage =  generateThumbnail(url: selectedMedia!){
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .frame(width: 150,height: 175)
+                            .aspectRatio(contentMode: .fit)
+                    }
+                    
+                }
+                else if selectedImage != nil{
+                    Image(uiImage: selectedImage!)
+                        .resizable()
+                        .frame(width: 150,height: 175)
+                        .aspectRatio( contentMode: .fit)
+                        .foregroundColor(.gray)
+                    
+                }
+                else{
+                    Image(systemName: "video.circle")
+                        .resizable()
+                        .frame(width: 70, height: 70)
+                        .aspectRatio(contentMode: .fit)
+                        .foregroundColor(.green)
+                }
+                
+            }
+            .onTapGesture(count: 2) {
+                isShowingPicker2.toggle()
+            }
+            .onTapGesture {
+                ImageToShow = selectedImage
+            }
+        }
+    }
+    
+        //func downloadButton Action
+    func downloadButtonAction(){
+        if let outputImageUrl = outputImageUrl {
+            downloadAndSaveImage(url: outputImageUrl)
+            showAlert = true
+            outputImage = nil
+            self.outputImageUrl = nil
+        }
+        else if let VideoUrl = VideoUrl {
+            saveVideoToAlbum(VideoUrl)
+            showAlert = true
+                //                        self.outputImageUrl = nil
+            self.VideoUrl = nil
+        }else{
+            print("media did not saved")
+        }
+    }
+    
+        // process button action
+    func processButtonAction(){
+        if selectedFirstImage != nil && selectedImage != nil {
+            showProgress = true
+            sendAPIPostRequest(firstImage: selectedFirstImage!, secondImage: selectedImage!){ url in
+                outputImageUrl = url
+                showProgress = false
+            }
+        }
+        else if selectedFirstImage != nil && selectedMedia != nil {
+            showProgress = true
+            sendAPIPostRequestWithVideo(firstImage: selectedFirstImage!, videoURL: selectedMedia!){ url in
+                outputMediaUrl = url
+                showProgress = false
+                
+            }
+            
         }
     }
     
@@ -204,42 +259,31 @@ struct ContentView: View {
         task.resume()
     }
     
-    //load video from url
-   
-
-    func loadMedia(for urlString: String, completion: @escaping (AVPlayerItem?) -> Void) {
-        print("Loading Media ...")
-        guard let url = URL(string: urlString) else {
-            completion(nil)
-            return
-        }
+        //    download video
+    func downloadVideo(from url: URL, completion: @escaping (URL?) -> Void) {
+        print("downloading video from url: \(url)")
+        let documentsDirectoryURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let destinationUrl = documentsDirectoryURL.appendingPathComponent(url.lastPathComponent)
         
-        let asset = AVURLAsset(url: url)
-        let playerItem = AVPlayerItem(asset: asset)
-        
-        // Check if the media is loaded
-        playerItem.asset.loadValuesAsynchronously(forKeys: ["playable"]) {
-            var error: NSError? = nil
-            let status = playerItem.asset.statusOfValue(forKey: "playable", error: &error)
-            switch status {
-            case .loaded:
-                break
-            case .failed, .cancelled:
-                print("Failed to load media")
-                completion(nil)
-                return
-            default:
-                print("Unknown status")
-                completion(nil)
-                return
-            }
-            
-            DispatchQueue.main.async {
-                completion(playerItem)
-            }
+        if FileManager.default.fileExists(atPath: destinationUrl.path) {
+            completion(destinationUrl)
+        } else {
+            URLSession.shared.downloadTask(with: url) { (location, response, error) in
+                guard let location = location else {
+                    completion(nil)
+                    return
+                }
+                
+                do {
+                    try FileManager.default.moveItem(at: location, to: destinationUrl)
+                    completion(destinationUrl)
+                } catch {
+                    print(error)
+                    completion(nil)
+                }
+            }.resume()
         }
     }
-
     
         //download and save the image
     func downloadAndSaveImage(url: String){
@@ -248,12 +292,41 @@ struct ContentView: View {
         let task = URLSession.shared.dataTask(with: URL){ (data, response,error) in
             if let data = data , let image = UIImage(data: data){
                 UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+                self.alertTitle = "Success"
+                self.alertMessage = "Image saved Successfully!"
             }
+            else{
+                self.alertTitle = "Error!"
+                self.alertMessage = "Could not save image!"
+            }
+            
         }
         task.resume()
     }
     
-    //Generate the Thumbnail for the video
+        //save video to album
+    
+    func saveVideoToAlbum(_ videoURL: URL) {
+        PHPhotoLibrary.shared().performChanges({
+            let options = PHAssetResourceCreationOptions()
+            let creationRequest = PHAssetCreationRequest.forAsset()
+            options.shouldMoveFile = true
+            creationRequest.addResource(with: .video, fileURL: videoURL, options: options)
+        }) { success, error in
+            if !success {
+                self.alertTitle = "Error!"
+                self.alertMessage = "Could not save video!"
+                print("Could not save video to photo library:", error as Any)
+            }
+            else{
+                self.alertTitle = "Success"
+                self.alertMessage = "Video saved Successfully!"
+            }
+        }
+    }
+    
+    
+        //Generate the Thumbnail for the input video
     func generateThumbnail(url: URL) -> UIImage? {
         let asset = AVAsset(url: url)
         let imageGenerator = AVAssetImageGenerator(asset: asset)
@@ -277,8 +350,9 @@ struct ContentView: View {
     
 }
 
-//send two images
+    //send two images
 func sendAPIPostRequest(firstImage:UIImage, secondImage: UIImage, completion: @escaping (String?) -> Void) {
+    
     guard let url = URL(string: "http://172.23.1.28:8010/api/face-swap/") else{
         print("Url not found")
         return
@@ -333,6 +407,7 @@ func sendAPIPostRequest(firstImage:UIImage, secondImage: UIImage, completion: @e
         
         if let error = error{
             print("Error Sending Data: \(error)")
+            completion(nil)
             return
         }
         
@@ -362,8 +437,8 @@ func sendAPIPostRequest(firstImage:UIImage, secondImage: UIImage, completion: @e
     task.resume()
 }
 
-//for image and a video
-func sendAPIPostRequest2(firstImage:UIImage, videoURL: URL, completion: @escaping (String?) -> Void) {
+    //for image and a video
+func sendAPIPostRequestWithVideo(firstImage:UIImage, videoURL: URL, completion: @escaping (String?) -> Void) {
     guard let url = URL(string: "http://172.23.1.28:8010/api/face-swap/") else{
         print("Url not found")
         return
@@ -376,7 +451,7 @@ func sendAPIPostRequest2(firstImage:UIImage, videoURL: URL, completion: @escapin
     
     var data  = Data()
     
-    // Create jsonData
+        // Create jsonData
     do{
         let jsonData: [String: Any] = [
             "face_enhance": true
@@ -393,7 +468,7 @@ func sendAPIPostRequest2(firstImage:UIImage, videoURL: URL, completion: @escapin
         data.append(jsonEncodedData)
         data.append("\r\n".data(using: .utf8)!)
         
-        // Add Image Data
+            // Add Image Data
         if let imageData = firstImage.jpegData(compressionQuality: 0.8) {
             data.append("--\(boundary)\r\n".data(using: .utf8)!)
             data.append("Content-Disposition: form-data; name=\"image1\"; filename=\"image1.jpeg\"\r\n".data(using: .utf8)!)
@@ -402,7 +477,7 @@ func sendAPIPostRequest2(firstImage:UIImage, videoURL: URL, completion: @escapin
             data.append("\r\n".data(using: .utf8)!)
         }
         
-        // Add Video Data
+            // Add Video Data
         if let videoData = try? Data(contentsOf: videoURL) {
             data.append("--\(boundary)\r\n".data(using: .utf8)!)
             data.append("Content-Disposition: form-data; name=\"image2\"; filename=\"video.mp4\"\r\n".data(using: .utf8)!)
@@ -411,7 +486,7 @@ func sendAPIPostRequest2(firstImage:UIImage, videoURL: URL, completion: @escapin
             data.append("\r\n".data(using: .utf8)!)
         }
         
-        // Ending of body
+            // Ending of body
         data.append("--\(boundary)--\r\n".data(using: .utf8)!)
         request.httpBody = data
         
@@ -419,10 +494,13 @@ func sendAPIPostRequest2(firstImage:UIImage, videoURL: URL, completion: @escapin
         print("Error creating JSON data or reading video file: \(error)")
     }
     
-    let task = URLSession.shared.dataTask(with: request){(data,response,error) in
+    let configuration = URLSessionConfiguration.default
+    configuration.timeoutIntervalForRequest = 400
+    let task = URLSession(configuration: configuration).dataTask(with: request){(data,response,error) in
         
         if let error = error{
             print("Error Sending Data: \(error)")
+            completion(nil)
             return
         }
         
